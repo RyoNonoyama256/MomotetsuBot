@@ -11,7 +11,7 @@ intents.messages = True
 intents.reactions = True
 intents.message_content = True
 
-bot = commands.Bot(command_prefix='$', intents=intents)
+bot = commands.Bot(command_prefix='$', intents=intents, help_command=None)
 
 # 日程提案のデータを保持する辞書
 schedules = defaultdict(dict)
@@ -51,8 +51,8 @@ def load_schedules():
         return defaultdict(dict)
 
 
-@bot.command(name='schedule')
-async def schedule(ctx, date_str: str, start_time_str: str, *args):
+@bot.command(name='create_schedule', aliases=['cs'])
+async def create_schedule(ctx, date_str: str, start_time_str: str, *args):
     # オプショナル引数の初期化
     endtime_hours = None
     overwrite = False
@@ -82,7 +82,7 @@ async def schedule(ctx, date_str: str, start_time_str: str, *args):
     if endtime_hours is not None:
         endtime = datetime.now() + timedelta(hours=endtime_hours)
     else:
-        endtime = datetime.now() + timedelta(hours=1)  # デフォルトの終了時間を設定
+        endtime = datetime.now() + timedelta(hours=24)  # デフォルトの終了時間を設定
 
     schedule_key = scheduled_datetime.strftime('%Y-%m-%d')
     if schedule_key in schedules and not overwrite:
@@ -164,20 +164,24 @@ async def on_reaction_add(reaction, user):
         if user.name not in schedules[schedule_key]['votes']:
             schedules[schedule_key]['votes'].append(user.name)
 
-@bot.command(name='confirmed_schedules')
-async def confirmed_schedules(ctx):
+@bot.command(name='show_schedules', aliases=['ss'])
+async def show_schedules(ctx, *args):
+    # オプショナル引数の初期化
+    show_all = False
+
+    arg_iter = iter(args)
     response = "確定スケジュール:\n"
+    for arg in arg_iter:
+        if arg == '-a':
+            show_all = True
+            response = "全スケジュール:\n"
+
     now = datetime.now()
     for date, schedule in schedules.items():
-        if schedule['datetime'] >= now and len(schedule['votes']) >= 3:
+        if (not show_all) and schedule['datetime'] >= now and len(schedule['votes']) >= 3:
             response += f"- {date}: {', '.join(schedule['votes'])}\n"
-    await ctx.send(response)
-
-@bot.command(name='all_schedules')
-async def all_schedules(ctx):
-    response = "全スケジュール:\n"
-    for date, schedule in schedules.items():
-        response += f"- {date}: {', '.join(schedule['votes'])} (同意数: {len(schedule['votes'])})\n"
+        elif show_all and schedule['datetime'] >= now: 
+            response += f"- {date}: {', '.join(schedule['votes'])} (同意数: {len(schedule['votes'])})\n"
     await ctx.send(response)
 
 @bot.command(name='search_schedule')
@@ -220,6 +224,41 @@ async def delete_schedule(ctx, date: str):
         save_schedules()
     else:
         await ctx.send(f"{date} は削除できるスケジュールではありません。")
+
+@bot.command(name='help')
+async def help_command(ctx):
+    help_text = """
+    **ヘルプ**
+
+    **$create_schedule (cs) [日付] [開始時間] [オプション]**
+    新しいスケジュールを作成します。例: $cs 2023-12-25 15:00
+    オプション:
+    -e [時間]: 投票の締め切り時間を設定。デフォルトは24時間後。
+    -o: 既存のスケジュールを上書き。
+
+    **$extend_voting [日付] [追加時間]**
+    指定された日付の投票期限を延長します。例: $extend_voting 2023-12-25 2
+
+    **$reopen_voting [日付] [追加時間]**
+    確定済みのスケジュールの投票を再開します。例: $reopen_voting 2023-12-25 1
+
+    **$show_schedules (ss) [-a]**
+    確定済みのスケジュールを表示します。-a オプションで全スケジュールを表示。例: $ss -a
+
+    **$search_schedule [日付]**
+    指定された日付のスケジュールを検索します。例: $search_schedule 2023-12-25
+
+    **$delete_schedule [日付]**
+    指定された日付のスケジュールを削除します。例: $delete_schedule 2023-12-25
+
+    **$hiroto**
+    ヒロトに関するコメントを表示します。
+
+    **$sorry**
+    謝罪のコメントを表示します。
+    """
+    await ctx.send(help_text)
+
 
 @tasks.loop(minutes=1)
 async def check_schedules():
