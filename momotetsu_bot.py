@@ -9,7 +9,7 @@ import json
 intents = discord.Intents.default()
 intents.messages = True
 intents.reactions = True
-intents.message_content = True
+# intents.message_content = True
 
 bot = commands.Bot(command_prefix='$', intents=intents, help_command=None)
 
@@ -90,7 +90,8 @@ async def create_schedule(ctx, date_str: str, start_time_str: str, *args):
         return
 
     # 日程の提案メッセージを送信
-    endtime_str = (endtime + timedelta(hours=9)).strftime('%Y-%m-%d %H:%M')
+    # endtime_str = (endtime + timedelta(hours=9)).strftime('%Y-%m-%d %H:%M')
+    endtime_str = (endtime).strftime('%Y-%m-%d %H:%M')
     message = await ctx.send(f'日程の提案: {datetime_str} 👍で賛成してください！\n（回答期限: {endtime_str}）')
     await message.add_reaction('👍')
 
