@@ -213,8 +213,16 @@ async def hiroto(ctx):
     await ctx.send("相変わらずヒロトはヒロトしてますね...")
 
 @bot.command(name='sorry')
-async def hiroto(ctx):
+async def sorry(ctx):
     await ctx.send("ごめんなさい．")
+
+@bot.command(name='hasegawa')
+async def hasegawa(ctx):
+    await ctx.send("長谷川を許すな")
+
+@bot.command(name='クリスマス')
+async def Xmas(ctx):
+    await ctx.send("https://tenor.com/view/rudolph-cute-christmas-decorations-christmas-tree-reindeer-gif-4892086250386727158")
 
 @bot.command(name='delete_schedule')
 async def delete_schedule(ctx, date: str):
@@ -289,3 +297,6 @@ def load_config():
 
 
 bot.run(load_config()['bot_token'])
+
+
+
